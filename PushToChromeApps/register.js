@@ -96,27 +96,25 @@ function generateSaSToken()
                   + base64UriEncoded + "&se=" + expires + "&skn=" + sasKeyName;
 }
 
+String.prototype.replaceAll = function(search, replacement) {
+    var target = this;
+    return target.replace(new RegExp(search, 'g'), replacement);
+};
+
 function sendNHRegistrationRequest()
 {
-  var registrationPayload = 
-  "<?xml version=\"1.0\" encoding=\"utf-8\"?>" +
-  "<entry xmlns=\"http://www.w3.org/2005/Atom\">" + 
-      "<content type=\"application/xml\">" + 
-          "<GcmRegistrationDescription xmlns:i=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://schemas.microsoft.com/netservices/2010/10/servicebus/connect\">" +
-              "<GcmRegistrationId>{GCMRegistrationId}</GcmRegistrationId>" +
-          "</GcmRegistrationDescription>" +
-      "</content>" +
-  "</entry>";
+  var registrationPayload = '{"installationId": "{GCMRegistrationId}", "platform":"gcm", "pushChannel":"{GCMRegistrationId}"}';
 
-  registrationPayload = registrationPayload.replace("{GCMRegistrationId}", registrationId);
+  registrationPayload = registrationPayload.replaceAll("{GCMRegistrationId}", registrationId);
 
-  var url = originalUri + "/registrations/?api-version=2014-09";
+  var url = originalUri + "/installations/12345?api-version=2015-01";
   var client = new XMLHttpRequest();
 
   client.onload = function () {
     if (client.readyState == 4) {
       if (client.status == 200) {
         updateLog("Notification Hub Registration succesful!");
+        updateLog(registrationPayload);
         updateLog(client.responseText);
       } else {
         updateLog("Notification Hub Registration did not succeed!");
@@ -130,10 +128,10 @@ function sendNHRegistrationRequest()
         updateLog("ERROR - Notification Hub Registration did not succeed!");
   }
 
-  client.open("POST", url, true);
-  client.setRequestHeader("Content-Type", "application/atom+xml;type=entry;charset=utf-8");
+  client.open("PUT", url, true);
+  client.setRequestHeader("Content-Type", "application/json");
   client.setRequestHeader("Authorization", sasToken);
-  client.setRequestHeader("x-ms-version", "2014-09");
+  client.setRequestHeader("x-ms-version", "2015-01");
 
   try {
       client.send(registrationPayload);
